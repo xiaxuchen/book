@@ -1,0 +1,10 @@
+outside:
+  resource:
+    path: /var/articles
+    prefix: /articles
+logging:
+  #设置日志等级
+  level:
+    root: INFO
+  file:
+    path: log

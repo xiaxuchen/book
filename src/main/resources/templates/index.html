@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html  xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${category==null?'目录':category}">目录</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+    <script src="//cdn.staticfile.org/jquery/3.3.1/jquery.min.js"></script>
+    <style>
+        .aside {
+            width: 20%;
+            float: left;
+            height: 100%;
+            overflow: scroll;
+        }
+        .content {
+            width: 80%;
+            float: left;
+            height: 100%;
+        }
+        .p {
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div class="clear p">
+        <div class="aside">
+            <ul class="list-group">
+                <th:block th:each="item:${categories}">
+                    <a th:href="${item.url}" th:class="${item.name == category?'active list-group-item':'list-group-item'}" th:text="${item.name}"></a>
+                </th:block>
+            </ul>
+        </div>
+        <div class="content">
+            <ul class="list-group">
+                <th:block th:each="item:${books}">
+                    <a th:href="${item.url}" class="list-group-item" th:text="${item.bookName}"></a>
+                </th:block>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

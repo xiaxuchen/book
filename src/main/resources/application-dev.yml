@@ -1,0 +1,4 @@
+outside:
+  resource:
+    path: "E:\\BaiduNetdiskDownload\\"
+    prefix: /articles
