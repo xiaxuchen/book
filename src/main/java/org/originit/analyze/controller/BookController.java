@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -29,6 +31,8 @@ import java.util.function.Predicate;
 @Controller
 public class BookController {
 
+
+    ReadWriteLock fileLock = new ReentrantReadWriteLock();
 
     @Value("${outside.resource.path}")
     private String path;
@@ -44,17 +48,22 @@ public class BookController {
      */
     @RequestMapping("/")
     public String index(Model model, @RequestParam(required = false) String category) throws IOException {
-        List<Category> categoryList = handleCategories();
-        if (category == null && !categoryList.isEmpty()) {
-            category = categoryList.get(0).getName();
+        fileLock.readLock().lock();
+        try{
+            List<Category> categoryList = handleCategories();
+            if (category == null && !categoryList.isEmpty()) {
+                category = categoryList.get(0).getName();
+            }
+            List<Book> books = Collections.EMPTY_LIST;
+            if (category != null) {
+                books = handleBooks(category);
+            }
+            model.addAttribute("category", category);
+            model.addAttribute("categories", categoryList);
+            model.addAttribute("books", books);
+        }finally {
+            fileLock.readLock().unlock();
         }
-        List<Book> books = Collections.EMPTY_LIST;
-        if (category != null) {
-            books = handleBooks(category);
-        }
-        model.addAttribute("category", category);
-        model.addAttribute("categories", categoryList);
-        model.addAttribute("books", books);
         return "index";
     }
 
@@ -127,31 +136,36 @@ public class BookController {
      * @param link     当前是哪一章
      */
     @RequestMapping("/book")
-    public String index(Model model, @RequestParam String category, @RequestParam String bookName, @RequestParam(required = false) String link) throws IOException {
-        Resource[] resources = ResourceUtil.loadResources(path + "/" + category + "/" + bookName + "/*.html");
+    public String book(Model model, @RequestParam String category, @RequestParam String bookName, @RequestParam(required = false) String link) throws IOException {
+        fileLock.readLock().lock();
+        try{
+            Resource[] resources = ResourceUtil.loadResources(path + "/" + category + "/" + bookName + "/*.html");
 
-        List<BookDetails> booksDetails = new ArrayList<>(resources.length);
-        // 遍历文件内容
-        for (Resource resource : resources) {
-            final BookDetails pageInfo = new BookDetails();
-            pageInfo.setName(resource.getFilename());
-            pageInfo.setUrl(resourcePrefix + "/" + category + "/" + encodeArg(bookName) + "/" + encodeArg(resource.getFilename()));
-            pageInfo.setForwardUrl("/?link=" + encodeArg(resource.getFilename()));
-            booksDetails.add(pageInfo);
-        }
-        if (link == null) {
-            if (booksDetails.size() > 0) {
-                link = booksDetails.get(0).getUrl();
+            List<BookDetails> booksDetails = new ArrayList<>(resources.length);
+            // 遍历文件内容
+            for (Resource resource : resources) {
+                final BookDetails pageInfo = new BookDetails();
+                pageInfo.setName(resource.getFilename());
+                pageInfo.setUrl(resourcePrefix + "/" + category + "/" + encodeArg(bookName) + "/" + encodeArg(resource.getFilename()));
+                pageInfo.setForwardUrl("/?link=" + encodeArg(resource.getFilename()));
+                booksDetails.add(pageInfo);
             }
-        } else {
-            // 处理中文
-            final String[] split = link.split("/");
-            split[split.length - 1] = encodeArg(split[split.length - 1]);
-            link = String.join("", split);
+            if (link == null) {
+                if (booksDetails.size() > 0) {
+                    link = booksDetails.get(0).getUrl();
+                }
+            } else {
+                // 处理中文
+                final String[] split = link.split("/");
+                split[split.length - 1] = encodeArg(split[split.length - 1]);
+                link = String.join("", split);
+            }
+            model.addAttribute("booksDetails", booksDetails);
+            model.addAttribute("link", link);
+            model.addAttribute("bookName", bookName);
+        }finally {
+            fileLock.readLock();
         }
-        model.addAttribute("booksDetails", booksDetails);
-        model.addAttribute("link", link);
-        model.addAttribute("bookName", bookName);
         return "book-details";
     }
 
@@ -202,28 +216,32 @@ public class BookController {
                 return null;
             }
         };
-        if (category == null) {
-            // 修改所有的书
-            resolveResources(path + "/*", resource -> {
-                // 重命名
-                File file = replaceFunc.apply(resource);
-                if (file == null) {
-                    return;
-                }
-                // 递归处理分类下的书籍
-                replaceBooksName(file.getName(), replaceFunc);
-            }, dirPredicate);
-        } else {
-            if (bookName == null) {
-                // 修改具体某本书
-                replaceDetailsName(category, bookName, replaceFunc);
+        fileLock.writeLock().lock();
+        try {
+            if (category == null) {
+                // 修改所有的书
+                resolveResources(path + "/*", resource -> {
+                    // 重命名
+                    File file = replaceFunc.apply(resource);
+                    if (file == null) {
+                        return;
+                    }
+                    // 递归处理分类下的书籍
+                    replaceBooksName(file.getName(), replaceFunc);
+                }, dirPredicate);
             } else {
-                // 修改指定分类的书
-                // 递归处理分类下的书籍
-                replaceBooksName(category, replaceFunc);
+                if (bookName == null) {
+                    // 修改具体某本书
+                    replaceDetailsName(category, bookName, replaceFunc);
+                } else {
+                    // 修改指定分类的书
+                    // 递归处理分类下的书籍
+                    replaceBooksName(category, replaceFunc);
+                }
             }
+        }finally {
+            fileLock.writeLock().unlock();
         }
-        ResourceUtil.loadResources(path);
         return "success";
     }
 
