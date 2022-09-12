@@ -60,14 +60,14 @@
                     <a th:href="${item.url}" target="content" th:class="${item.url == link?'active list-group-item':'list-group-item'}" th:text="${item.name}"></a>
                 </th:block>
             </ul>
-            <div th:else class="full center">
+            <div th:unless="${booksDetails != null && booksDetails.size() > 0}" class="full center">
                 无列表
             </div>
         </div>
         <div class="content">
             <iframe th:if="${link != null}" name="content" th:src="${link}" frameborder="no"  scrolling="auto" width="100%" align="centor" height="100%">
             </iframe>
-            <div th:else class="full center">
+            <div th:unless="${link != null}" class="full center">
                 当前无内容
             </div>
         </div>

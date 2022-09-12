@@ -1,4 +1,4 @@
 outside:
   resource:
-    path: "E:\\BaiduNetdiskDownload\\"
+    path: "E:\\books\\"
     prefix: /articles
