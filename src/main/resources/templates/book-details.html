@@ -20,6 +20,7 @@
             width: 20%;
             float: left;
             height: 100%;
+            overflow: auto;
         }
         .content {
             width: calc(80% - 10px);
@@ -65,6 +66,9 @@
             background: white;
             box-shadow: 0 2px 4px rgba(0, 0, 0, .12), 0 0 6px rgba(0, 0, 0, .04);
         }
+        .audio-container {
+
+        }
     </style>
 </head>
 <body>
@@ -106,6 +110,10 @@
             </div>
         </div>
         <div class="content transEle">
+            <div class="audio-container">
+                <audio id="mp3" controls="controls" >
+                </audio>
+            </div>
             <iframe th:if="${link != null}" name="content" th:src="${link}" frameborder="no"  scrolling="auto" width="100%" align="centor" height="100%">
             </iframe>
             <div th:unless="${link != null}" class="full center">
@@ -121,8 +129,25 @@
         $items.click((e)=>{
             let $preview = $(".list-group-item.active");
             $preview.removeClass("active");
-            $(e.target).addClass("active");
+            let $curItem = $(e.target);
+            $curItem.addClass("active");
+            let resourceUrl = $curItem.attr("href").trim();
+            console.log(resourceUrl);
+            let urlPrefix = resourceUrl.substring(0,resourceUrl.lastIndexOf("."));
+            console.log(urlPrefix);
+            // 侧边栏伸缩 end
+            // 录音支持 start
+            let $mp3 = $("#mp3");
+            $mp3.children("source").remove();
+            $mp3.children().remove();
+            $mp3.append(`<source src="${urlPrefix}.m4a">`);
+            $mp3.append(`<source src="${urlPrefix}.mp3">`);
+            // $mp3.attr("src",urlPrefix + ".mp3");
+            $mp3[0].pause();
+            $mp3[0].load();
+            // 录音支持 end
         });
+        $items.first().click();
         let $back = $(".back-btn");
         $back.click(()=>{
             window.location.href = "/";
@@ -191,7 +216,7 @@
            }
            isCollapse = !isCollapse;
         });
-        // 侧边栏伸缩 end
+
     });
 </script>
 </html>
