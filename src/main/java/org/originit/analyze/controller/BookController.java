@@ -277,6 +277,6 @@ public class BookController {
     }
 
     private void replaceDetailsName(String category, String bookName, Function<Resource, File> replaceFunc) {
-        resolveResources(path + "/" + category + "/" + bookName + "/*.html", replaceFunc::apply, filePredicate);
+        resolveResources(path + "/" + category + "/" + bookName + "/*", replaceFunc::apply, filePredicate);
     }
 }
