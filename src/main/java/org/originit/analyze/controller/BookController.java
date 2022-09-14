@@ -1,5 +1,6 @@
 package org.originit.analyze.controller;
 
+import org.originit.analyze.consts.BookConst;
 import org.originit.analyze.entity.Book;
 import org.originit.analyze.entity.BookDetails;
 import org.originit.analyze.entity.Category;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,6 +29,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 
 @Controller
 public class BookController {
@@ -73,9 +76,12 @@ public class BookController {
      * @return 编码后的url
      */
     private String encodeArg(String arg) {
-        return URLEncoder.encode(arg);
+        try {
+            return URLEncoder.encode(arg,"utf8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
-
     /**
      * 处理分类下的所有书籍
      *
@@ -136,11 +142,24 @@ public class BookController {
      * @param link     当前是哪一章
      */
     @RequestMapping("/book")
-    public String book(Model model, @RequestParam String category, @RequestParam String bookName, @RequestParam(required = false) String link) throws IOException {
+    public String book(Model model, @RequestParam String category, @RequestParam String bookName, @RequestParam(required = false) String link,@RequestParam (required = false) String type) throws IOException {
         fileLock.readLock().lock();
-        try{
-            Resource[] resources = ResourceUtil.loadResources(path + "/" + category + "/" + bookName + "/*.html");
 
+        try{
+            String suffix;
+            String secondSuffix = null;
+            if (type == null || !BookConst.SUFFIX_ALL.contains(type)) {
+                suffix = BookConst.SUFFIX_HTML;
+                secondSuffix = BookConst.SUFFIX_PDF;
+            } else {
+                suffix = type;
+            }
+            String finalSuffix = suffix;
+            Resource[] resources = ResourceUtil.loadResources(path + "/" + category + "/" + bookName + "/*." + suffix);
+            if (resources.length == 0 && secondSuffix != null) {
+                finalSuffix = secondSuffix;
+                resources = ResourceUtil.loadResources(path + "/" + category + "/" + bookName + "/*." + secondSuffix);
+            }
             List<BookDetails> booksDetails = new ArrayList<>(resources.length);
             // 遍历文件内容
             for (Resource resource : resources) {
@@ -160,6 +179,8 @@ public class BookController {
                 split[split.length - 1] = encodeArg(split[split.length - 1]);
                 link = String.join("", split);
             }
+            model.addAttribute("fileType",finalSuffix);
+            model.addAttribute("fileTypes",BookConst.SUFFIX_ALL);
             model.addAttribute("booksDetails", booksDetails);
             model.addAttribute("link", link);
             model.addAttribute("bookName", bookName);

@@ -5,17 +5,37 @@
     <title th:text="${bookName}"></title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
     <script src="//cdn.staticfile.org/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
     <style>
+        .transEle {
+            /*transition-duration: 1s;*/
+            /*transition-property: width,margin-left;*/
+        }
+        .fl {
+            float: left;
+        }
         .aside {
+            padding: 5px 10px;
+            margin-left: 10px;
             width: 20%;
             float: left;
             height: 100%;
-            overflow: scroll;
         }
         .content {
-            width: 80%;
+            width: calc(80% - 10px);
             float: left;
             height: 100%;
+        }
+        .scaler {
+        }
+        .aside.collapsing {
+            display: none;
+            margin-left: 0;
+            padding: 0;
+            width: 0;
+        }
+        .content.collapsing {
+            width: 100%;
         }
         .p {
             height: 100vh;
@@ -30,6 +50,7 @@
             justify-content: center;
         }
         .back-btn{
+            z-index: 1000;
             cursor: pointer;
             position: fixed;
             bottom: 10%;
@@ -53,8 +74,28 @@
             <span class="glyphicon glyphicon-share-alt" style="color: darkgrey;transform:rotate(180deg);"></span>
         </div>
     </div>
-    <div class="clear p">
-        <div class="aside">
+    <div class="clearfix p">
+        <div class="aside transEle">
+            <div class="clearfix">
+                <div class="fl">
+                    <div class="dropdown">
+                        <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                            <span th:text="'当前类型:' + ${fileType}"></span>
+                            <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+                            <th:block th:each="type:${fileTypes}">
+                                <li class="typeIndicator" th:if="${type != fileType}" ><a href="#" th:text="${type}"></a></li>
+                            </th:block>
+                        </ul>
+                    </div>
+                </div>
+                <div class="transEle fl scaler">
+                    <button type="button" class="btn btn-default" aria-label="Left Align">
+                        <span class="glyphicon glyphicon-menu-left"></span>
+                    </button>
+                </div>
+            </div>
             <ul class="list-group" th:if="${booksDetails != null && booksDetails.size() > 0}">
                 <th:block th:each="item:${booksDetails}">
                     <a th:href="${item.url}" target="content" th:class="${item.url == link?'active list-group-item':'list-group-item'}" th:text="${item.name}"></a>
@@ -64,7 +105,7 @@
                 无列表
             </div>
         </div>
-        <div class="content">
+        <div class="content transEle">
             <iframe th:if="${link != null}" name="content" th:src="${link}" frameborder="no"  scrolling="auto" width="100%" align="centor" height="100%">
             </iframe>
             <div th:unless="${link != null}" class="full center">
@@ -87,6 +128,7 @@
             window.location.href = "/";
         });
 
+        // 当鼠标放置在目录按钮上三秒则消失 start
         $back.mouseenter(()=>{
             backHideTimeout = setTimeout(()=>{
                $back.hide();
@@ -100,7 +142,56 @@
                 backHideTimeout = null;
             }
         });
-
+        // 当鼠标放置在目录按钮上三秒则消失 end
+        // 点击下拉更换文件类型 start
+        const suffixParam = "type=";
+        let $indicators = $(".typeIndicator");
+        $indicators.click((e)=> {
+            let $indicator = $(e.target);
+            console.log("indicator",$indicator)
+            // 获取当前选中的文件类型
+            let curType = $indicator.text().trim();
+            console.log("curType",curType);
+            let url = window.location.href;
+            let suffixIndex = url.indexOf(suffixParam);
+            // 拼接url
+            if (suffixIndex === -1) {
+                if (url.indexOf("?") === -1) {
+                    url += "?type=" + curType;
+                } else {
+                    url += "&type=" + curType;
+                }
+            } else {
+                let nextIndex = url.indexOf("&",suffixIndex);
+                let middleIndex = suffixIndex + suffixParam.length;
+                console.log("???")
+                if (nextIndex === -1) {
+                    url = url.substring(0,middleIndex) + curType;
+                } else {
+                    url = url.substring(0,middleIndex) + curType + url.substring(nextIndex);
+                }
+            }
+            window.location.href = url;
+        });
+        // 点击下拉更换文件类型 end
+        // 侧边栏伸缩 start
+        let $scaler = $(".scaler");
+        let $aside = $(".aside");
+        let $content = $(".content");
+        let isCollapse = false;
+        $scaler.click(()=>{
+           if (isCollapse) {
+               $scaler.removeClass("collapsing");
+               $aside.removeClass("collapsing");
+               $content.removeClass("collapsing");
+           } else {
+               $scaler.addClass("collapsing");
+               $aside.addClass("collapsing");
+               $content.addClass("collapsing");
+           }
+           isCollapse = !isCollapse;
+        });
+        // 侧边栏伸缩 end
     });
 </script>
 </html>
