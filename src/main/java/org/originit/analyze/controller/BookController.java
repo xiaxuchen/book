@@ -72,7 +72,7 @@ public class BookController {
      */
     private String encodeArg(String arg) {
         try {
-            return URLEncoder.encode(arg,"utf8");
+            return URLEncoder.encode(arg,"utf8").replace("+", "%20");
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
