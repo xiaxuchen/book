@@ -51,22 +51,17 @@ public class BookController {
      */
     @RequestMapping("/")
     public String index(Model model, @RequestParam(required = false) String category) throws IOException {
-        fileLock.readLock().lock();
-        try{
-            List<Category> categoryList = handleCategories();
-            if (category == null && !categoryList.isEmpty()) {
-                category = categoryList.get(0).getName();
-            }
-            List<Book> books = Collections.EMPTY_LIST;
-            if (category != null) {
-                books = handleBooks(category);
-            }
-            model.addAttribute("category", category);
-            model.addAttribute("categories", categoryList);
-            model.addAttribute("books", books);
-        }finally {
-            fileLock.readLock().unlock();
+        List<Category> categoryList = handleCategories();
+        if (category == null && !categoryList.isEmpty()) {
+            category = categoryList.get(0).getName();
         }
+        List<Book> books = Collections.EMPTY_LIST;
+        if (category != null) {
+            books = handleBooks(category);
+        }
+        model.addAttribute("category", category);
+        model.addAttribute("categories", categoryList);
+        model.addAttribute("books", books);
         return "index";
     }
 
@@ -143,50 +138,44 @@ public class BookController {
      */
     @RequestMapping("/book")
     public String book(Model model, @RequestParam String category, @RequestParam String bookName, @RequestParam(required = false) String link,@RequestParam (required = false) String type) throws IOException {
-        fileLock.readLock().lock();
-
-        try{
-            String suffix;
-            String secondSuffix = null;
-            if (type == null || !BookConst.SUFFIX_ALL.contains(type)) {
-                suffix = BookConst.SUFFIX_HTML;
-                secondSuffix = BookConst.SUFFIX_PDF;
-            } else {
-                suffix = type;
-            }
-            String finalSuffix = suffix;
-            Resource[] resources = ResourceUtil.loadResources(path + "/" + category + "/" + bookName + "/*." + suffix);
-            if (resources.length == 0 && secondSuffix != null) {
-                finalSuffix = secondSuffix;
-                resources = ResourceUtil.loadResources(path + "/" + category + "/" + bookName + "/*." + secondSuffix);
-            }
-            List<BookDetails> booksDetails = new ArrayList<>(resources.length);
-            // 遍历文件内容
-            for (Resource resource : resources) {
-                final BookDetails pageInfo = new BookDetails();
-                pageInfo.setName(resource.getFilename());
-                pageInfo.setUrl(resourcePrefix + "/" + category + "/" + encodeArg(bookName) + "/" + encodeArg(resource.getFilename()));
-                pageInfo.setForwardUrl("/?link=" + encodeArg(resource.getFilename()));
-                booksDetails.add(pageInfo);
-            }
-            if (link == null) {
-                if (booksDetails.size() > 0) {
-                    link = booksDetails.get(0).getUrl();
-                }
-            } else {
-                // 处理中文
-                final String[] split = link.split("/");
-                split[split.length - 1] = encodeArg(split[split.length - 1]);
-                link = String.join("", split);
-            }
-            model.addAttribute("fileType",finalSuffix);
-            model.addAttribute("fileTypes",BookConst.SUFFIX_ALL);
-            model.addAttribute("booksDetails", booksDetails);
-            model.addAttribute("link", link);
-            model.addAttribute("bookName", bookName);
-        }finally {
-            fileLock.readLock();
+        String suffix;
+        String secondSuffix = null;
+        if (type == null || !BookConst.SUFFIX_ALL.contains(type)) {
+            suffix = BookConst.SUFFIX_HTML;
+            secondSuffix = BookConst.SUFFIX_PDF;
+        } else {
+            suffix = type;
         }
+        String finalSuffix = suffix;
+        Resource[] resources = ResourceUtil.loadResources(path + "/" + category + "/" + bookName + "/*." + suffix);
+        if (resources.length == 0 && secondSuffix != null) {
+            finalSuffix = secondSuffix;
+            resources = ResourceUtil.loadResources(path + "/" + category + "/" + bookName + "/*." + secondSuffix);
+        }
+        List<BookDetails> booksDetails = new ArrayList<>(resources.length);
+        // 遍历文件内容
+        for (Resource resource : resources) {
+            final BookDetails pageInfo = new BookDetails();
+            pageInfo.setName(resource.getFilename());
+            pageInfo.setUrl(resourcePrefix + "/" + category + "/" + encodeArg(bookName) + "/" + encodeArg(resource.getFilename()));
+            pageInfo.setForwardUrl("/?link=" + encodeArg(resource.getFilename()));
+            booksDetails.add(pageInfo);
+        }
+        if (link == null) {
+            if (booksDetails.size() > 0) {
+                link = booksDetails.get(0).getUrl();
+            }
+        } else {
+            // 处理中文
+            final String[] split = link.split("/");
+            split[split.length - 1] = encodeArg(split[split.length - 1]);
+            link = String.join("", split);
+        }
+        model.addAttribute("fileType",finalSuffix);
+        model.addAttribute("fileTypes",BookConst.SUFFIX_ALL);
+        model.addAttribute("booksDetails", booksDetails);
+        model.addAttribute("link", link);
+        model.addAttribute("bookName", bookName);
         return "book-details";
     }
 
@@ -237,32 +226,28 @@ public class BookController {
                 return null;
             }
         };
-        fileLock.writeLock().lock();
-        try {
-            if (category == null) {
-                // 修改所有的书
-                resolveResources(path + "/*", resource -> {
-                    // 重命名
-                    File file = replaceFunc.apply(resource);
-                    if (file == null) {
-                        return;
-                    }
-                    // 递归处理分类下的书籍
-                    replaceBooksName(file.getName(), replaceFunc);
-                }, dirPredicate);
-            } else {
-                if (bookName == null) {
-                    // 修改具体某本书
-                    replaceDetailsName(category, bookName, replaceFunc);
-                } else {
-                    // 修改指定分类的书
-                    // 递归处理分类下的书籍
-                    replaceBooksName(category, replaceFunc);
+        if (category == null) {
+            // 修改所有的书
+            resolveResources(path + "/*", resource -> {
+                // 重命名
+                File file = replaceFunc.apply(resource);
+                if (file == null) {
+                    return;
                 }
+                // 递归处理分类下的书籍
+                replaceBooksName(file.getName(), replaceFunc);
+            }, dirPredicate);
+        } else {
+            if (bookName == null) {
+                // 修改具体某本书
+                replaceDetailsName(category, bookName, replaceFunc);
+            } else {
+                // 修改指定分类的书
+                // 递归处理分类下的书籍
+                replaceBooksName(category, replaceFunc);
             }
-        }finally {
-            fileLock.writeLock().unlock();
         }
+
         return "success";
     }
 
