@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html  xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${bookName}"></title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+    <script src="//cdn.staticfile.org/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
+    <style>
+        .transEle {
+            /*transition-duration: 1s;*/
+            /*transition-property: width,margin-left;*/
+        }
+        .fl {
+            float: left;
+        }
+        .aside {
+            padding: 5px 10px;
+            margin-left: 10px;
+            width: 20%;
+            float: left;
+            height: 100%;
+            overflow: auto;
+        }
+        .content {
+            width: calc(80% - 10px);
+            float: left;
+            height: 100%;
+        }
+        .scaler {
+        }
+        .aside.collapsing {
+            display: none;
+            margin-left: 0;
+            padding: 0;
+            width: 0;
+        }
+        .content.collapsing {
+            width: 100%;
+        }
+        .p {
+            height: 100vh;
+        }
+        .full {
+            width: 100%;
+            height: 100%;
+        }
+        .center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .back-btn{
+            z-index: 1000;
+            cursor: pointer;
+            position: fixed;
+            bottom: 10%;
+            right: 10%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, .12), 0 0 6px rgba(0, 0, 0, .04);
+        }
+        .audio-container {
+
+        }
+    </style>
+</head>
+<body>
+    <div class="back-btn">
+        <div>目录</div>
+        <div>
+            <span class="glyphicon glyphicon-share-alt" style="color: darkgrey;transform:rotate(180deg);"></span>
+        </div>
+    </div>
+    <div class="clearfix p">
+        <div class="aside transEle">
+            <div class="clearfix">
+                <div class="fl">
+                    <div class="dropdown">
+                        <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                            <span th:text="'当前类型:' + ${fileType}"></span>
+                            <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+                            <th:block th:each="type:${fileTypes}">
+                                <li class="typeIndicator" th:if="${type != fileType}" ><a href="#" th:text="${type}"></a></li>
+                            </th:block>
+                        </ul>
+                    </div>
+                </div>
+                <div class="transEle fl scaler">
+                    <button type="button" class="btn btn-default" aria-label="Left Align">
+                        <span class="glyphicon glyphicon-menu-left"></span>
+                    </button>
+                </div>
+            </div>
+            <ul class="list-group" th:if="${booksDetails != null && booksDetails.size() > 0}">
+                <th:block th:each="item:${booksDetails}">
+                    <a th:href="${item.url}" target="content" th:class="${item.url == link?'active list-group-item':'list-group-item'}" th:text="${item.name}"></a>
+                </th:block>
+            </ul>
+            <div th:unless="${booksDetails != null && booksDetails.size() > 0}" class="full center">
+                无列表
+            </div>
+        </div>
+        <div class="content transEle">
+            <div class="audio-container">
+                <audio id="mp3" controls="controls" >
+                </audio>
+            </div>
+            <iframe th:if="${link != null}" name="content" th:src="${link}" frameborder="no"  scrolling="auto" width="100%" align="centor" height="100%">
+            </iframe>
+            <div th:unless="${link != null}" class="full center">
+                当前无内容
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    let backHideTimeout = null;
+    $(document).ready(()=> {
+        let $items = $(".list-group-item");
+        $items.click((e)=>{
+            let $preview = $(".list-group-item.active");
+            $preview.removeClass("active");
+            let $curItem = $(e.target);
+            $curItem.addClass("active");
+            let resourceUrl = $curItem.attr("href").trim();
+            console.log(resourceUrl);
+            let urlPrefix = resourceUrl.substring(0,resourceUrl.lastIndexOf("."));
+            console.log(urlPrefix);
+            // 侧边栏伸缩 end
+            // 录音支持 start
+            let $mp3 = $("#mp3");
+            $mp3.children("source").remove();
+            $mp3.children().remove();
+            $mp3.append(`<source src="${urlPrefix}.m4a">`);
+            $mp3.append(`<source src="${urlPrefix}.mp3">`);
+            // $mp3.attr("src",urlPrefix + ".mp3");
+            $mp3[0].pause();
+            $mp3[0].load();
+            // 录音支持 end
+        });
+        $items.first().click();
+        let $back = $(".back-btn");
+        $back.click(()=>{
+            window.location.href = "/";
+        });
+
+        // 当鼠标放置在目录按钮上三秒则消失 start
+        $back.mouseenter(()=>{
+            backHideTimeout = setTimeout(()=>{
+               $back.hide();
+               backHideTimeout = null;
+            },3000);
+        });
+
+        $back.mouseleave(()=>{
+            if (backHideTimeout != null) {
+                clearTimeout(backHideTimeout);
+                backHideTimeout = null;
+            }
+        });
+        // 当鼠标放置在目录按钮上三秒则消失 end
+        // 点击下拉更换文件类型 start
+        const suffixParam = "type=";
+        let $indicators = $(".typeIndicator");
+        $indicators.click((e)=> {
+            let $indicator = $(e.target);
+            console.log("indicator",$indicator)
+            // 获取当前选中的文件类型
+            let curType = $indicator.text().trim();
+            console.log("curType",curType);
+            let url = window.location.href;
+            let suffixIndex = url.indexOf(suffixParam);
+            // 拼接url
+            if (suffixIndex === -1) {
+                if (url.indexOf("?") === -1) {
+                    url += "?type=" + curType;
+                } else {
+                    url += "&type=" + curType;
+                }
+            } else {
+                let nextIndex = url.indexOf("&",suffixIndex);
+                let middleIndex = suffixIndex + suffixParam.length;
+                console.log("???")
+                if (nextIndex === -1) {
+                    url = url.substring(0,middleIndex) + curType;
+                } else {
+                    url = url.substring(0,middleIndex) + curType + url.substring(nextIndex);
+                }
+            }
+            window.location.href = url;
+        });
+        // 点击下拉更换文件类型 end
+        // 侧边栏伸缩 start
+        let $scaler = $(".scaler");
+        let $aside = $(".aside");
+        let $content = $(".content");
+        let isCollapse = false;
+        $scaler.click(()=>{
+           if (isCollapse) {
+               $scaler.removeClass("collapsing");
+               $aside.removeClass("collapsing");
+               $content.removeClass("collapsing");
+           } else {
+               $scaler.addClass("collapsing");
+               $aside.addClass("collapsing");
+               $content.addClass("collapsing");
+           }
+           isCollapse = !isCollapse;
+        });
+
+    });
+</script>
+</html>
