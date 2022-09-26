@@ -13,9 +13,9 @@ public interface BookConst {
 
     String SUFFIX_MP3 = "mp3";
 
-    String SUFFIX_MB4 = "mb4";
+    String SUFFIX_M4A = "m4a";
 
 
 
-    List<String> SUFFIX_ALL = Collections.unmodifiableList(Arrays.asList(SUFFIX_PDF,SUFFIX_HTML,SUFFIX_MP3,SUFFIX_MB4));
+    List<String> SUFFIX_ALL = Collections.unmodifiableList(Arrays.asList(SUFFIX_PDF,SUFFIX_HTML,SUFFIX_MP3,SUFFIX_M4A));
 }
