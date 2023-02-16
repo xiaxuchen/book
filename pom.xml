@@ -18,8 +18,10 @@
     <modules>
         <module>notification</module>
         <module>books</module>
+        <module>boot</module>
         <module>shopcar</module>
         <module>algorithm</module>
+        <module>mybatis-demo</module>
     </modules>
 
     <dependencies>

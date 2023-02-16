@@ -10,10 +10,14 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -31,8 +35,6 @@ import java.util.function.Predicate;
 @Controller
 public class BookController {
 
-
-    ReadWriteLock fileLock = new ReentrantReadWriteLock();
 
     @Value("${outside.resource.path}")
     private String path;
@@ -259,5 +261,16 @@ public class BookController {
 
     private void replaceDetailsName(String category, String bookName, Function<Resource, File> replaceFunc) {
         resolveResources(path + "/" + category + "/" + bookName + "/*", replaceFunc::apply, filePredicate);
+    }
+
+    @GetMapping("/logout")
+    public String logout(HttpServletResponse response, HttpSession session) {
+        session.removeAttribute("userId");
+        Cookie cookie = new Cookie("token","");
+        cookie.setMaxAge(0);
+        cookie.setDomain("xxc.com");
+        cookie.setPath("/");
+        response.addCookie(cookie);
+        return "redirect:/";
     }
 }

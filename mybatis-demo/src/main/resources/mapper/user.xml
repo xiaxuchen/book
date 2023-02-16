@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.originit.mapper.UserMapper">
+    <resultMap id="userMap" type="org.originit.entity.User">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="age" column="age"/>
+        <result property="birthday" column="birthday"/>
+        <association property="department" javaType="org.originit.entity.Department">
+            <id property="id" column="department_id"/>
+            <result property="name" column="department_name"/>
+        </association>
+    </resultMap>
+
+    <resultMap id="userLazyMap" type="org.originit.entity.User">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="age" column="age"/>
+        <association property="department" javaType="org.originit.entity.Department" select="org.originit.mapper.DepartmentDao.findById" column="department_id">
+        </association>
+    </resultMap>
+
+    <select id="findAll" resultMap="userMap">
+        select usr.*, dep.name as department_name
+        from tbl_user usr
+                 left join tbl_department dep on usr.department_id = dep.id
+    </select>
+
+    <select id="findLazyAll" resultMap="userLazyMap">
+        select * from tbl_user;
+    </select>
+
+    <select id="findAllByDepartmentId" resultType="org.originit.entity.User" >
+        select * from tbl_user where department_id = #{id}
+    </select>
+</mapper>

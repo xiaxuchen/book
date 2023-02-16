@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.originit.mapper.DepartmentDao">
+
+    <cache></cache>
+    <resultMap id="lazyMap" type="org.originit.entity.Department">
+        <id column="id" property="id"/>
+        <result column="name" property="name" />
+        <result column="tel" property="tel" />
+        <collection property="users" ofType="org.originit.entity.User" select="org.originit.mapper.UserMapper.findAllByDepartmentId" column="id" />
+    </resultMap>
+
+    <select id="findAll" resultType="org.originit.entity.Department">
+        select * from tbl_department
+    </select>
+
+    <select id="findLazyAll" resultMap="lazyMap">
+        select * from tbl_department
+    </select>
+
+    <select id="findById" parameterType="string" resultType="org.originit.entity.Department">
+        select * from tbl_department where id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="org.originit.entity.Department">
+        insert into tbl_department (id, name, tel) values (#{id}, #{name}, #{tel})
+    </insert>
+
+    <update id="update" parameterType="org.originit.entity.Department">
+        update tbl_department set name = #{name}, tel = #{tel} where id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="string">
+        delete from tbl_department where id = #{id}
+    </delete>
+</mapper>

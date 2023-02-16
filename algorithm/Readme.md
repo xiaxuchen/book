@@ -13,6 +13,8 @@
 IDisjointSet disjointSet = iDisjointSetClass.getConstructor(int.class).newInstance(9);
 ```
 没想到int这种基本类型也能通过.class获取类型
-
 #### 2. 单元测试
 通过ParameterizedTest注解可以实现参数化的测试，将数据通过参数传递
+#### 3. StringBuilder与+对比
+可以通过StringBuilder传入字符串最大长度，防止StringBuilder不断扩容复制
+![StringBuilder](./img/StringBuilder.png)
